@@ -1,0 +1,33 @@
+name: Lean module path guard
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  module-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            scripts/check_non_ascii_module_paths.py
+            scripts/test_check_non_ascii_module_paths.py
+            scripts/test_check_non_ascii_git_integration.py
+          sparse-checkout-cone-mode: false
+
+      - name: Run Python tests
+        run: |
+          python3 scripts/test_check_non_ascii_module_paths.py -v
+          python3 scripts/test_check_non_ascii_git_integration.py -v
+
+      - name: Check introduced Lean paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 scripts/check_non_ascii_module_paths.py "$BASE_SHA" "$HEAD_SHA"
